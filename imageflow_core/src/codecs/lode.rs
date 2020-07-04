@@ -14,6 +14,7 @@ use libc;
 use rgb;
 use lodepng;
 use lodepng::{CompressSettings, DecompressSettings};
+use flate2::Compression;
 
 pub struct LodepngEncoder {
     io: IoProxy,
@@ -128,16 +129,13 @@ fn zlib_compressor_6(input: &[u8], output: &mut dyn std::io::Write, context: &Co
 fn zlib_compressor_9(input: &[u8], output: &mut dyn std::io::Write, context: &CompressSettings) -> std::result::Result<(), lodepng::Error> {
     zlib_compressor(input, output, context, 9)
 }
-fn zlib_compressor(input: &[u8], output: &mut dyn std::io::Write, context: &CompressSettings, zlib_level: i32) -> std::result::Result<(), lodepng::Error>{
-    let target_buf_size = input.len() * 1001/1000 + 12;
-    let mut target = Vec::with_capacity(target_buf_size);
-    let mut compressed_size = target_buf_size as c_ulong;
-    unsafe {
-        compress2(target.as_mut_ptr(), &mut compressed_size, input.as_ptr(), input.len() as c_ulong, zlib_level);
-    }
-    target.truncate(compressed_size as usize);
-    if let Err(e) = output.write(&target){
+fn zlib_compressor(input: &[u8], output: &mut dyn std::io::Write, context: &CompressSettings, zlib_level: u32) -> std::result::Result<(), lodepng::Error>{
+    let mut compress = flate2::write::ZlibEncoder::new(output, flate2::Compression::new(zlib_level));
+    if let Err(e) = compress.write(&input){
         return Err(lodepng::Error::new(1008));
+    }
+    if let Err(e) = compress.flush_finish(){
+        return Err(lodepng::Error::new(1009));
     }
     Ok(())
 }
