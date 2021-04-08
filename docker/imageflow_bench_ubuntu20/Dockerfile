@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:rolling
 
 # libpng-dev is required for libpng-sys crate
 # libssl-dev and pkg-config are required for SSL support
